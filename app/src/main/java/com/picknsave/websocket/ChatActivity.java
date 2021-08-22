@@ -22,6 +22,7 @@ import ua.naiksoftware.stomp.StompClient;
 
 @SuppressWarnings({"FieldCanBeLocal", "ResultOfMethodCallIgnored", "CheckResult"})
 public class ChatActivity extends AppCompatActivity {
+
     private Button broadcastButton;
     private Button groupButton;
     private Button chatButton;
@@ -37,6 +38,15 @@ public class ChatActivity extends AppCompatActivity {
     private String chatUserId;
 
     private void init() {
+
+    }
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_chat);
+
+        //-----------------------------------------------| findViewById
         broadcastButton = findViewById(R.id.broadcast);
         groupButton = findViewById(R.id.groups);
         chatButton = findViewById(R.id.chat);
@@ -55,15 +65,8 @@ public class ChatActivity extends AppCompatActivity {
         sendButton.setEnabled(false);
 
         showText = findViewById(R.id.show);
-    }
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_chat);
-
-        this.init();
-
+        //-----------------------------------------------| StompClient Connect
         StompClient stompClient = Stomp.over(Stomp.ConnectionProvider.OKHTTP, ConstantKey.SOCKET_SERVER_URL);
         Toast.makeText(this, "Start connecting to server", Toast.LENGTH_SHORT).show();
         stompClient.connect();
@@ -82,17 +85,12 @@ public class ChatActivity extends AppCompatActivity {
             });
         });
 
+        //-----------------------------------------------| Button Enable
         chatUserIdText.addTextChangedListener(new TextWatcher() {
             @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-            }
-
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-
-            }
-
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
             @Override
             public void afterTextChanged(Editable s) {
                 if (!submitButton.isEnabled())
@@ -109,6 +107,7 @@ public class ChatActivity extends AppCompatActivity {
             sendButton.setEnabled(true);
         });
 
+        //-----------------------------------------------| Sent Message
         sendButton.setOnClickListener(v -> {
             JSONObject jsonObject = new JSONObject();
             try {
@@ -125,6 +124,7 @@ public class ChatActivity extends AppCompatActivity {
             chatMessageText.setText("");
         });
 
+        //-----------------------------------------------| Goto Other Activity
         broadcastButton.setOnClickListener(v -> {
             Intent intent = new Intent();
             intent.setClass(ChatActivity.this, BroadcastActivity.class);
