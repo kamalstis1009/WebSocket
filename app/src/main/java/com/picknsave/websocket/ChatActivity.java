@@ -11,7 +11,6 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -67,12 +66,12 @@ public class ChatActivity extends AppCompatActivity {
 
         //-----------------------------------------------| StompClient Connect
         // Start connecting to server
-        StompClient stompClient = Stomp.over(Stomp.ConnectionProvider.OKHTTP, ConstantKey.SOCKET_SERVER_URL);
-        stompClient.connect();
-        StompUtils.lifecycle(stompClient);
+        StompClient mClient = Stomp.over(Stomp.ConnectionProvider.OKHTTP, ConstantKey.SOCKET_SERVER_URL);
+        mClient.connect();
+        StompUtils.lifecycle(mClient); //Connection callback
 
         // Subscribe chat endpoint to receive response by RX Java
-        stompClient.topic(ConstantKey.CHAT_RESPONSE.replace(ConstantKey.PLACEHOLDER, userId)).subscribe(new Consumer<StompMessage>() {
+        mClient.topic(ConstantKey.CHAT_RESPONSE.replace(ConstantKey.PLACEHOLDER, userId)).subscribe(new Consumer<StompMessage>() {
             @Override
             public void accept(StompMessage message) throws Exception {
                 JSONObject json = new JSONObject(message.getPayload());
@@ -130,7 +129,7 @@ public class ChatActivity extends AppCompatActivity {
                 if (chatUserId == null || chatUserId.length() == 0) {
                     chatUserId = chatUserIdText.getText().toString();
                 }
-                stompClient.send(ConstantKey.CHAT, json.toString()).subscribe();
+                mClient.send(ConstantKey.CHAT, json.toString()).subscribe();
                 chatMessageText.setText("");
             }
         });
