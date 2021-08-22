@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -17,8 +18,10 @@ import org.json.JSONObject;
 
 import java.util.Random;
 
+import io.reactivex.functions.Consumer;
 import ua.naiksoftware.stomp.Stomp;
 import ua.naiksoftware.stomp.StompClient;
+import ua.naiksoftware.stomp.dto.StompMessage;
 
 @SuppressWarnings({"FieldCanBeLocal", "ResultOfMethodCallIgnored", "CheckResult"})
 public class ChatActivity extends AppCompatActivity {
@@ -63,22 +66,28 @@ public class ChatActivity extends AppCompatActivity {
         showText = findViewById(R.id.show);
 
         //-----------------------------------------------| StompClient Connect
+        // Start connecting to server
         StompClient stompClient = Stomp.over(Stomp.ConnectionProvider.OKHTTP, ConstantKey.SOCKET_SERVER_URL);
-        Toast.makeText(this, "Start connecting to server", Toast.LENGTH_SHORT).show();
         stompClient.connect();
         StompUtils.lifecycle(stompClient);
 
-        Log.i(ConstantKey.TAG, "Subscribe chat endpoint to receive response");
-        stompClient.topic(ConstantKey.CHAT_RESPONSE.replace(ConstantKey.PLACEHOLDER, userId)).subscribe(stompMessage -> {
-            JSONObject jsonObject = new JSONObject(stompMessage.getPayload());
-            Log.i(ConstantKey.TAG, "Receive: " + jsonObject.toString());
-            runOnUiThread(() -> {
-                try {
-                    showText.append(jsonObject.getString("response") + "\n");
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-            });
+        // Subscribe chat endpoint to receive response by RX Java
+        stompClient.topic(ConstantKey.CHAT_RESPONSE.replace(ConstantKey.PLACEHOLDER, userId)).subscribe(new Consumer<StompMessage>() {
+            @Override
+            public void accept(StompMessage message) throws Exception {
+                JSONObject json = new JSONObject(message.getPayload());
+                Log.i(ConstantKey.TAG, "Receive: " + json.toString());
+                ChatActivity.this.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            showText.append(json.getString("response") + "\n");
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });
+            }
         });
 
         //-----------------------------------------------| Button Enable
@@ -94,44 +103,56 @@ public class ChatActivity extends AppCompatActivity {
             }
         });
 
-        submitButton.setOnClickListener(v -> {
-            chatUserId = chatUserIdText.getText().toString();
-            if (chatUserId.length() == 0) {
-                return;
+        submitButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                chatUserId = chatUserIdText.getText().toString();
+                if (chatUserId.length() == 0) {
+                    return;
+                }
+                submitButton.setEnabled(false);
+                sendButton.setEnabled(true);
             }
-            submitButton.setEnabled(false);
-            sendButton.setEnabled(true);
         });
 
         //-----------------------------------------------| Sent Message
-        sendButton.setOnClickListener(v -> {
-            JSONObject jsonObject = new JSONObject();
-            try {
-                jsonObject.put("userID", chatUserId);
-                jsonObject.put("fromUserID", userIdText.getText().toString());
-                jsonObject.put("message", chatMessageText.getText());
-            } catch (JSONException e) {
-                e.printStackTrace();
+        sendButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                JSONObject json = new JSONObject();
+                try {
+                    json.put("userID", chatUserId);
+                    json.put("fromUserID", userIdText.getText().toString());
+                    json.put("message", chatMessageText.getText());
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+                if (chatUserId == null || chatUserId.length() == 0) {
+                    chatUserId = chatUserIdText.getText().toString();
+                }
+                stompClient.send(ConstantKey.CHAT, json.toString()).subscribe();
+                chatMessageText.setText("");
             }
-            if (chatUserId == null || chatUserId.length() == 0) {
-                chatUserId = chatUserIdText.getText().toString();
-            }
-            stompClient.send(ConstantKey.CHAT, jsonObject.toString()).subscribe();
-            chatMessageText.setText("");
         });
 
         //-----------------------------------------------| Goto Other Activity
-        broadcastButton.setOnClickListener(v -> {
-            Intent intent = new Intent();
-            intent.setClass(ChatActivity.this, BroadcastActivity.class);
-            startActivity(intent);
-            this.finish();
+        broadcastButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent();
+                intent.setClass(ChatActivity.this, BroadcastActivity.class);
+                ChatActivity.this.startActivity(intent);
+                ChatActivity.this.finish();
+            }
         });
-        groupButton.setOnClickListener(v -> {
-            Intent intent = new Intent();
-            intent.setClass(ChatActivity.this, GroupActivity.class);
-            startActivity(intent);
-            this.finish();
+        groupButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent();
+                intent.setClass(ChatActivity.this, GroupActivity.class);
+                ChatActivity.this.startActivity(intent);
+                ChatActivity.this.finish();
+            }
         });
     }
 }
