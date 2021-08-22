@@ -37,10 +37,6 @@ public class ChatActivity extends AppCompatActivity {
     private String userId;
     private String chatUserId;
 
-    private void init() {
-
-    }
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
